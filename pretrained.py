@@ -2,7 +2,8 @@ import torch
 from diffusers import StableDiffusion3Pipeline
 
 pipe = StableDiffusion3Pipeline.from_pretrained("stabilityai/stable-diffusion-3-medium-diffusers", torch_dtype=torch.float16)
-pipe = pipe.to("cuda")
+device = "mps" if torch.backends.mps.is_available() else "cpu"
+pipe = pipe.to(device)
 
 image = pipe(
     "A cat holding a sign that says hello world",
