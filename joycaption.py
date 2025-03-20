@@ -4,11 +4,12 @@ import argparse
 import torch
 from PIL import Image
 from transformers import AutoProcessor, LlavaForConditionalGeneration
+import pathlib
 
 PROMPT = "Write a long descriptive caption for this image in a formal tone."
 MODEL_NAME = "fancyfeast/llama-joycaption-alpha-two-hf-llava"
 
-def main(output: str, image_path: str):
+def process_images(output: str, images_path: list[str]):
     # Load JoyCaption
     # bfloat16 is the native dtype of the LLM used in JoyCaption (Llama 3.1)
     # device_map=0 loads the model into the first GPU
@@ -18,7 +19,7 @@ def main(output: str, image_path: str):
 
     with torch.no_grad():
         # Load image
-        image = Image.open(image_path)
+        images = [Image.open(image_path) for image_path in images_path]
 
         # Build the conversation
         convo = [
@@ -40,7 +41,7 @@ def main(output: str, image_path: str):
         assert isinstance(convo_string, str)
 
         # Process the inputs
-        inputs = processor(text=[convo_string], images=[image], return_tensors="pt").to('mps')
+        inputs = processor(text=[convo_string], images=images, return_tensors="pt").to('mps')
         inputs['pixel_values'] = inputs['pixel_values'].to(torch.bfloat16)
 
         # Generate the captions
@@ -61,14 +62,24 @@ def main(output: str, image_path: str):
         # Decode the caption
         caption = processor.tokenizer.decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)
         caption = caption.strip()
+        print(inputs)
+        print()
+        print(generate_ids)
+        print()
+        print(caption)
+        #with open(output, "w") as f:
+        #    f.write(caption)
 
-        with open(output, "w") as f:
-            f.write(caption)
+def get_files_in_dir(directory: str):
+    return [str(p) for p in pathlib.Path(directory).rglob("*") if p.is_file()]
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="JoyCaption: Image Captioning with Llama 3.1")
     parser.add_argument("--image", type=str, help="Path to the image to caption")
+    parser.add_argument("--dir", type=str, default=None, help="Directory of images")
     parser.add_argument("-output", type=str, default=None, help="Path to save the captioned image")
     args = parser.parse_args()
-    main(args.output, args.image)
-
+    all_images = [f for f in get_files_in_dir(args.dir)]
+    if args.image:
+        all_images.append(args.image)
+    process_images(args.output, all_images)
