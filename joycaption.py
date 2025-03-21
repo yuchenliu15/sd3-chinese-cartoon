@@ -41,7 +41,7 @@ def process_images(output: str, images_path: list[str]):
         assert isinstance(convo_string, str)
 
         # Process the inputs
-        inputs = processor(text=[convo_string], images=images, return_tensors="pt").to('mps')
+        inputs = processor(text=[convo_string]*len(images), images=images, return_tensors="pt").to('mps')
         inputs['pixel_values'] = inputs['pixel_values'].to(torch.bfloat16)
 
         # Generate the captions
