@@ -9,7 +9,7 @@ import pathlib
 PROMPT = "Write a long descriptive caption for this image in a formal tone."
 MODEL_NAME = "fancyfeast/llama-joycaption-alpha-two-hf-llava"
 
-def process_images(output: str, images_path: list[str]):
+def process_images(output_dir: str, images_path: list[str]):
     # Load JoyCaption
     # bfloat16 is the native dtype of the LLM used in JoyCaption (Llama 3.1)
     # device_map=0 loads the model into the first GPU
@@ -54,32 +54,32 @@ def process_images(output: str, images_path: list[str]):
             temperature=0.6,
             top_k=None,
             top_p=0.9,
-        )[0]
+        )
 
         # Trim off the prompt
-        generate_ids = generate_ids[inputs['input_ids'].shape[1]:]
+        generate_ids = generate_ids[:,inputs['input_ids'].shape[1]:]
 
         # Decode the caption
-        caption = processor.tokenizer.decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)
-        caption = caption.strip()
-        print(inputs)
-        print()
-        print(generate_ids)
-        print()
-        print(caption)
-        #with open(output, "w") as f:
-        #    f.write(caption)
+        captions = processor.tokenizer.batch_decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)
+        write_captions(output_dir, images_path, captions)
 
 def get_files_in_dir(directory: str):
     return [str(p) for p in pathlib.Path(directory).rglob("*") if p.is_file()]
+
+def write_captions(output_dir: str, output_file_names: list[str], captions: list[str]):
+    dir_path = pathlib.Path(output_dir)
+    dir_path.mkdir()
+    for file_name, caption in zip(output_file_names, captions):
+        with open(dir_path / f"{pathlib.Path(file_name).stem}.txt", "w") as f:
+            f.write(caption.strip())
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="JoyCaption: Image Captioning with Llama 3.1")
     parser.add_argument("--image", type=str, help="Path to the image to caption")
     parser.add_argument("--dir", type=str, default=None, help="Directory of images")
-    parser.add_argument("-output", type=str, default=None, help="Path to save the captioned image")
+    parser.add_argument("--output-dir", required=True, type=str, default=None, help="Directory to save the captioned images")
     args = parser.parse_args()
     all_images = [f for f in get_files_in_dir(args.dir)]
     if args.image:
         all_images.append(args.image)
-    process_images(args.output, all_images)
+    process_images(args.output_dir, all_images)
