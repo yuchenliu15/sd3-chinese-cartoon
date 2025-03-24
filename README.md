@@ -11,3 +11,7 @@ When Genmoji came out, I wondered if the same result can be achieved much more c
 ## Implementation
 * steps taken to address overfitting
 
+## Things worthnoting
+* captioning might need to specify the exact style (cartoon)
+
+
