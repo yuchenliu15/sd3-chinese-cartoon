@@ -1,45 +1,51 @@
+#!/usr/bin/env python3
 import os
 import requests
-from bs4 import BeautifulSoup
 import argparse
+import json
+import time
 
-def scrape_images(topic, num_images, save_dir):
-    url = f"https://realpython.com/{topic}/"
-    response = requests.get(url)
-    
-    if response.status_code != 200:
-        print(f"Failed to retrieve the page: {response.status_code}")
-        return
-    
-    soup = BeautifulSoup(response.text, 'html.parser')
-    img_tags = soup.find_all('img')
-    
+BATCH_SIZE = 100
+
+def get_image_urls(num_images):
+    urls = []
+    for start in range(0, num_images, BATCH_SIZE):
+        url = f"https://realpython.com/search/api/v1/?kind=article&kind=course&kind=topic&order=newest&continue_after={start}&limit={BATCH_SIZE}"
+        response = requests.get(url)
+        if response.status_code != 200:
+            print(f"Failed to retrieve the page: {response.status_code}")
+            raise ValueError("Failed to retrieve the page")
+        results = json.loads(response.text)['results']
+        for result in results:
+            urls.append(result['image_url'])
+    print(f"get_image_urls retrieved: {urls}")
+    return urls
+
+def scrape_images(img_urls, save_dir):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
-    
-    count = 0
-    for img in img_tags:
-        if count >= num_images:
-            break
-        img_url = img.get('src')
-        if img_url:
-            try:
-                img_response = requests.get(img_url)
-                img_response.raise_for_status()
-                img_name = os.path.join(save_dir, f"{topic}_{count + 1}.jpg")
-                with open(img_name, 'wb') as f:
-                    f.write(img_response.content)
-                count += 1
-                print(f"Downloaded {img_name}")
-            except requests.exceptions.RequestException as e:
-                print(f"Could not download {img_url}: {e}")
+
+    for i, img_url in enumerate(img_urls):
+        try:
+            img_response = requests.get(img_url)
+            img_response.raise_for_status()
+            img_name = os.path.join(save_dir, f"training_{i}.jpg")
+            with open(img_name, 'wb') as f:
+                f.write(img_response.content)
+            print(f"Downloaded {img_name}")
+        except requests.exceptions.RequestException as e:
+            print(f"Could not download {img_url}: {e}")
 
 if __name__ == "__main__":
+    start_time = time.perf_counter()
+    
     parser = argparse.ArgumentParser(description='Scrape images from Real Python.')
-    parser.add_argument('topic', type=str, help='The topic to scrape images for.')
-    parser.add_argument('num_images', type=int, help='The number of images to download.')
-    parser.add_argument('save_dir', type=str, help='The directory to save images.')
+    parser.add_argument('--num-images', type=int, help='The number of images to download.')
+    parser.add_argument('--save-dir', type=str, help='The directory to save images.')
     
     args = parser.parse_args()
-    
-    scrape_images(args.topic, args.num_images, args.save_dir)
+    img_urls = get_image_urls(args.num_images) 
+    scrape_images(img_urls, args.save_dir)
+
+    end_time = time.perf_counter()
+    print(f"Time elapsed: {end_time - start_time:.4f} seconds")
