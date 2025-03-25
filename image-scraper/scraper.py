@@ -5,7 +5,7 @@ import argparse
 import json
 import time
 
-BATCH_SIZE = 100
+BATCH_SIZE = 25 # max limit for the Real Python API is 25
 
 def get_image_urls(num_images):
     urls = []
