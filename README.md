@@ -13,5 +13,5 @@ When Genmoji came out, I wondered if the same result can be achieved much more c
 
 ## Things worthnoting
 * captioning might need to specify the exact style (cartoon)
-
-
+* training data size for lora vs normal
+* training data qc
