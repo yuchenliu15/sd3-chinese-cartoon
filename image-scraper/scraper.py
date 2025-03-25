@@ -4,6 +4,7 @@ import requests
 import argparse
 import json
 import time
+from concurrent.futures import ThreadPoolExecutor
 
 BATCH_SIZE = 25 # max limit for the Real Python API is 25
 
@@ -24,17 +25,20 @@ def get_image_urls(num_images):
 def scrape_images(img_urls, save_dir):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
+    thread_workers = min(32, max(4, len(img_urls) // 5))
+    with ThreadPoolExecutor(max_workers=thread_workers) as executor:
+        futures = [executor.submit(download_image, img_url, save_dir, i) for i, img_url in enumerate(img_urls)]
 
-    for i, img_url in enumerate(img_urls):
-        try:
-            img_response = requests.get(img_url)
-            img_response.raise_for_status()
-            img_name = os.path.join(save_dir, f"training_{i}.jpg")
-            with open(img_name, 'wb') as f:
-                f.write(img_response.content)
-            print(f"Downloaded {img_name}")
-        except requests.exceptions.RequestException as e:
-            print(f"Could not download {img_url}: {e}")
+def download_image(img_url, img_name, save_dir, file_postfix):
+    try:
+        img_response = requests.get(img_url)
+        img_response.raise_for_status()
+        img_name = os.path.join(save_dir, f"training_{file_postfix}.jpg")
+        with open(img_name, 'wb') as f:
+            f.write(img_response.content)
+        print(f"Downloaded {img_name}")
+    except requests.exceptions.RequestException as e:
+        print(f"Could not download {img_url}: {e}")
 
 if __name__ == "__main__":
     start_time = time.perf_counter()
