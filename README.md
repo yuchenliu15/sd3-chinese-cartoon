@@ -19,3 +19,6 @@ When Genmoji came out, I wondered if the same result can be achieved much more c
 * captioning might need to specify the exact style (cartoon)
 * training data size for lora vs normal
 * training data qc
+* hyperparams
+    * training: learning rate, training steps 
+    * inferencing: scheduler, step numbers
