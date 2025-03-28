@@ -1,6 +1,6 @@
-export MODEL_NAME="runwayml/stable-diffusion-v1-5"
-export INSTANCE_DIR="path-to-instance-images"
-export OUTPUT_DIR="path-to-save-model"
+export MODEL_NAME="stabilityai/stable-diffusion-3-medium-diffusers"
+export INSTANCE_DIR="../training_data"
+export OUTPUT_DIR="../finetuned_output"
 
 accelerate launch train_dreambooth_lora.py \
   --pretrained_model_name_or_path=$MODEL_NAME  \
