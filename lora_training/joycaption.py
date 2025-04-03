@@ -8,19 +8,22 @@ import pathlib
 
 PROMPT = "Write a long descriptive caption for this image in a formal tone."
 MODEL_NAME = "fancyfeast/llama-joycaption-alpha-two-hf-llava"
+BATCH_SIZE = 50 
 
 def process_images(output_dir: str, images_path: list[str]):
-    # Load JoyCaption
-    # bfloat16 is the native dtype of the LLM used in JoyCaption (Llama 3.1)
-    # device_map=0 loads the model into the first GPU
     print("process_images args", output_dir, images_path)
+    for i in range(0, len(images_path), BATCH_SIZE):
+        process_batch(output_dir, i, i + BATCH_SIZE, images_path)
+
+def process_batch(output_dir: str, start, end, images_path: list[str]):
+    print("process_batch args", output_dir, start, end, images_path)
     processor = AutoProcessor.from_pretrained(MODEL_NAME)
     llava_model = LlavaForConditionalGeneration.from_pretrained(MODEL_NAME, torch_dtype="bfloat16", device_map=0)
     llava_model.eval()
 
     with torch.no_grad():
         # Load image
-        images = [Image.open(image_path) for image_path in images_path]
+        images = [Image.open(images_path[i]) for i in range(start, end)]
 
         # Build the conversation
         convo = [
@@ -62,15 +65,18 @@ def process_images(output_dir: str, images_path: list[str]):
 
         # Decode the caption
         captions = processor.tokenizer.batch_decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)
-        write_captions(output_dir, images_path, captions)
+        write_captions(output_dir, images_path, captions, start, end)
 
 def get_files_in_dir(directory: str):
     return [str(p) for p in pathlib.Path(directory).rglob("*") if p.is_file()]
 
-def write_captions(output_dir: str, output_file_names: list[str], captions: list[str]):
+def write_captions(output_dir: str, output_file_names: list[str], captions: list[str], start, end):
     dir_path = pathlib.Path(output_dir)
-    dir_path.mkdir()
-    for file_name, caption in zip(output_file_names, captions):
+    dir_path.mkdir(exist_ok=True)
+    if len(captions) != end-start:
+        raise ValueError(f"Number of captions ({len(captions)}) !=  number of images ({end-start})")
+    for i in range(len(captions)):
+        file_name, caption = output_file_names[start+i], captions[i]
         with open(dir_path / f"{pathlib.Path(file_name).stem}.txt", "w") as f:
             f.write(caption.strip())
 
