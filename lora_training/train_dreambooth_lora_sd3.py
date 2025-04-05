@@ -311,6 +311,11 @@ def parse_args(input_args=None):
         default=None,
         help="The column of the dataset containing the instance prompt for each image",
     )
+    parser.add_argument(
+        "--caption_dir",
+        type=str,
+        default=None,
+    )
 
     parser.add_argument("--repeats", type=int, default=1, help="How many times to repeat the training data.")
 
@@ -788,12 +793,20 @@ class DreamBoothDataset(Dataset):
                 self.custom_instance_prompts = []
                 for caption in custom_instance_prompts:
                     self.custom_instance_prompts.extend(itertools.repeat(caption, repeats))
+            if args.caption_dir:
+                self.custom_instance_prompts = []
+                for path in list(Path(instance_data_root).iterdir()):
+                    if path.suffix not in ['.txt']: continue
+                    with open(path, "r") as f:
+                        caption = f.read()
+                    self.custom_instance_prompts.extend(itertools.repeat(caption, repeats))
+
         else:
             self.instance_data_root = Path(instance_data_root)
             if not self.instance_data_root.exists():
                 raise ValueError("Instance images root doesn't exists.")
 
-            instance_images = [Image.open(path) for path in list(Path(instance_data_root).iterdir())]
+            instance_images = [Image.open(path) for path in list(Path(instance_data_root).iterdir()) if path.suffix in [".jpg", ".png"]]
             self.custom_instance_prompts = None
 
         self.instance_images = []
