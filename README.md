@@ -1,12 +1,8 @@
-# 🏭 imoji 
+# Vintage Chinese Cartoon Stable Diffusion fine-tuning
 
 ## About
 
-An Apple Genmoji clone
-
-## Motivation
-
-When Genmoji came out, I wondered if the same result can be achieved much more cheaply through open source models and minimal training
+Stable Diffusion 3 Medium fine-tuned on a classic Chinese cartoon "Havoc in Heaven".
 
 ## Benchmarking
 * scraper for images on RealPython
@@ -22,3 +18,5 @@ When Genmoji came out, I wondered if the same result can be achieved much more c
 * hyperparams
     * training: learning rate, training steps 
     * inferencing: scheduler, step numbers
+* log model history
+* in training loop, loss can hit 0.5
