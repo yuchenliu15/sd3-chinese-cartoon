@@ -1,8 +1,11 @@
 # Vintage Chinese Cartoon Stable Diffusion fine-tuning
+![alt text](assets/output6.png)
 
 ## About
 
 Stable Diffusion 3 Medium fine-tuned on a classic Chinese cartoon "Havoc in Heaven".
+The film looks like this:
+![alt text](training_extracted_images/training_44.jpg)
 
 ## Benchmarking
 * scraper for images on RealPython
